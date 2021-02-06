@@ -1,0 +1,28 @@
+from qiskit import*
+from math import pi
+from qiskit.visualization import plot_bloch_multivector
+
+qc = QuantumCircuit(2,2)
+qc.h(0)
+qc.draw(output = 'mpl')
+
+qc.h(1)
+qc.measure(0,0)
+qc.measure(1,1)
+qc.draw(output = 'mpl')
+
+simulator = Aer.get_backend('qasm_simulator')
+result = execute(qc, backend  = simulator, shots = 1).result()
+count = result.data()
+#memory = result.get_memory()
+from qiskit.tools.visualization import plot_histogram
+print(count)
+
+if '0x0' in count['counts']:
+    print('Heads!')
+elif '0x1' in count['counts']:
+    print('Tails!')
+elif'0x2' in count['counts']:
+    print('Teads!')
+else:
+    print('Hails!')
