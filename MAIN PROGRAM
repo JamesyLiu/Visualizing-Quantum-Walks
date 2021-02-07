@@ -1,25 +1,94 @@
-from qiskit import *
+from qiskit import*
 from math import pi
 from qiskit.visualization import plot_bloch_multivector
-n_steps = 4
-inc = 0
-step = 0
-pos = []
-def coin(i):
-    qc = QuantumCircuit(1,1)
-    qc.h(0)
-    qc.measure(0,0)
-    qc.draw(output = 'mpl')
+import numpy
+import random
+import matplotlib.pyplot as plt
+from matplotlib import animation
+from IPython.display import HTML
+'''
+The following code is a "quantum" extension of this random walk: https://colab.research.google.com/drive/1-s0u1-H85fFR5SDCtpKmD-h0QXKBTeVV created by Matthew Wright.
+I call it a "quantum walk" but it is really a hadamard walk as it measure's the system for each step. I will try to work on an actual quantum walk in the future
+'''
+
+random_length = 50
+random_walkers = []
+qc = QuantumCircuit(2,2)
+qc.h(0)
+qc.draw(output = 'mpl')
+
+qc.h(1)
+qc.measure(0,0)
+qc.measure(1,1)
+qc.draw(output = 'mpl')
+
+for i in range(50):
+    
     simulator = Aer.get_backend('qasm_simulator')
     result = execute(qc, backend  = simulator, shots = 1).result()
     count = result.data()
-    if '0x1' in count['counts']:
-        i = -1
+#memory = result.get_memory()
+ #   from qiskit.tools.visualization import plot_histogram
+#print(count)
+    if '0x0' in count['counts']:
+        random_walkers.append(0)
+    elif '0x1' in count['counts']:
+        random_walkers.append(1)
+    elif'0x2' in count['counts']:
+        random_walkers.append(2)
     else:
-        i = 1
-    return i
+        random_walkers.append(3)
+#print(random_walkers)
 
-for i in range(n_steps):
-    step = step + coin(inc)
-    pos[i] = step
-end
+from IPython.display import HTML
+# define some plot variables
+fig, ax = plt.subplots()
+ax.set_xlim(-10,10)
+ax.set_ylim(-10,10)
+
+# define the possible moves at each step of the random walk
+dirs = numpy.array([[0,1],[0,-1],[1,0],[-1,0]])
+
+# define a numpy array to hold the locations visited on the random walk
+locations = numpy.zeros((1,2)) # 1 row, 2 columns
+
+# define a function to make animation frames
+def run(i):
+  global locations
+  
+  # first frame is handled separately
+  if i == 0:
+    line, = ax.plot([], [], lw=2)
+    ax.plot(0,0,'ro')
+    return line
+  
+  # generate a step of the random walk
+  r = random_walkers[i]
+  move = dirs[r]
+  nextloc = [locations[-1] + move]
+  locations = numpy.append(locations, nextloc, axis=0)
+  
+  # set the plot data
+  xdata = locations[:,0]
+  ydata = locations[:,1]
+  
+  ax.cla() # clear the previous plot (necessary for removing old dots)
+  
+  # update the plot limits
+  ax.set_xlim(min(-10,min(xdata)-1), max(10,max(xdata)+1))
+  ax.set_ylim(min(-10,min(ydata)-1), max(10,max(ydata)+1))
+  
+  # redraw the plot
+  line, = ax.plot([], [], lw=2)
+  line.set_data(xdata, ydata)
+  ax.plot(locations[-1,0], locations[-1,1], 'ro')
+  
+  return line
+  
+  
+   %matplotlib qt 
+
+anim = animation.FuncAnimation(fig, run, frames=50, interval=100)
+HTML(anim.to_jshtml())
+
+
